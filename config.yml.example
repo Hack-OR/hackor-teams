@@ -1,0 +1,15 @@
+discord:
+    token: <bot-token-here>
+
+    specializations:
+        message-id: 792921979329314836
+        emojis:
+            regional_indicator_a: noob
+            regional_indicator_b: ui/ux
+            regional_indicator_c: backend
+            regional_indicator_d: software
+
+    team-requests:
+        channel-id: 792922400987021313
+
+
