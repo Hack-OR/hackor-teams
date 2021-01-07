@@ -22,6 +22,9 @@ msg_settings = {'allowed_mentions': discord.AllowedMentions(everyone=False, role
 
 
 _user_cache = dict()
+'''
+resolves a username to a discord.member.Member object
+'''
 async def resolve_user(ctx: discord.ext.commands.context.Context, user: str, use_cache: bool=False) -> discord.member.Member:
     assert isinstance(user, str)
 
@@ -42,6 +45,9 @@ async def resolve_user(ctx: discord.ext.commands.context.Context, user: str, use
     return member
 
 
+'''
+creates a set of discord.member.Member who are competitors
+'''
 async def get_competitors(ctx: discord.ext.commands.context.Context) -> typing.Set[discord.member.Member]:
     competitors = set(ctx.guild.members)
     for role_name in config['discord']['ignore-roles']:
