@@ -28,9 +28,14 @@ async def resolve_user(ctx, user: str, use_cache: bool=False) -> discord.Member:
     if (not use_cache) or not member:
         try:
             member = await converter.convert(ctx, user)
-            _user_cache[user] = member
         except discord.ext.commands.errors.MemberNotFound:
             member = None
+
+        if (not member) and user.startswith('@'):
+            member = await resolve_user(ctx, user[1:], use_cache=use_cache)
+
+        if member:
+            _user_cache[user] = member
 
     return member
 
@@ -41,7 +46,7 @@ async def resolve_user(ctx, user: str, use_cache: bool=False) -> discord.Member:
 @client.event
 async def on_ready():
     logging.info(f'{client.user} has connected to Discord!')
-    #await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='to your requests'))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='to your requests'))
 
 
 @client.event
@@ -64,30 +69,31 @@ async def on_raw_reaction_add(payload):
 
 @client.command(pass_context=True)
 async def request(ctx, *args):
-    # don't actually do anything with the users we find here;
-    # we do all of the hard work once the event starts. For now, just check to 
-    # make sure all of the users exist
-    _users_not_found = list()
-    for username in set(args):
-        # the work usually won't be wasted since it's stored in cache
-        if not (user := await resolve_user(ctx, username)):
-            _users_not_found.append(username)
-        else:
-            # check to make sure the user has the right role
-            pass
+    if ctx.channel.id == config['discord']['team-requests']['channel-id']:
+        # don't actually do anything with the users we find here;
+        # we do all of the hard work once the event starts. For now, just check to 
+        # make sure all of the users exist
+        _users_not_found = list()
+        for username in set(args):
+            # the work usually won't be wasted since it's stored in cache
+            if not (user := await resolve_user(ctx, username)):
+                _users_not_found.append(username)
+            else:
+                # check to make sure the user has the right role
+                pass
 
-    if _users_not_found:
-        # send message saying the users weren't found. 
-        msg = '**Warning:** Unable to find users: `' + '`, `'.join(_users_not_found) + '`'
-        await ctx.send(msg, **msg_settings)
-    else:
-        # TODO: search for previous commands, and drop the old check mark if exists.
-        await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+        if _users_not_found:
+            # send message saying the users weren't found. 
+            msg = '**Warning:** Unable to find users: `' + '`, `'.join(_users_not_found) + '`'
+            await ctx.send(msg, **msg_settings)
+        else:
+            # TODO: search for previous commands, and drop the old check mark if exists.
+            await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
 
 @client.command(pass_context=True)
 async def ping(ctx):
-    await ctx.send('Pong @everyone', **msg_settings)
+    await ctx.send('Pong! I am alive.', **msg_settings)
 
 
 ##########
