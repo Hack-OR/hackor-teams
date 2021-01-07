@@ -3,6 +3,7 @@
 import discord
 import discord.ext.commands
 
+import typing
 import yaml
 import logging
 import unicodedata
@@ -21,7 +22,7 @@ msg_settings = {'allowed_mentions': discord.AllowedMentions(everyone=False, role
 
 
 _user_cache = dict()
-async def resolve_user(ctx, user: str, use_cache: bool=False) -> discord.Member:
+async def resolve_user(ctx: discord.ext.commands.context.Context, user: str, use_cache: bool=False) -> discord.member.Member:
     assert isinstance(user, str)
 
     converter = discord.ext.commands.MemberConverter() # XXX: should I move this to the global scope?
@@ -41,7 +42,7 @@ async def resolve_user(ctx, user: str, use_cache: bool=False) -> discord.Member:
     return member
 
 
-async def get_competitors(ctx) -> set:
+async def get_competitors(ctx: discord.ext.commands.context.Context) -> typing.Set[discord.member.Member]:
     competitors = set(ctx.guild.members)
     for role_name in config['discord']['ignore-roles']:
         competitors -= set(discord.utils.get(ctx.guild.roles, name=role_name).members)
@@ -53,13 +54,13 @@ async def get_competitors(ctx) -> set:
 
 
 @client.event
-async def on_ready():
+async def on_ready() -> None:
     logging.info(f'{client.user} has connected to Discord!')
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='your requests'))
 
 
 @client.event
-async def on_raw_reaction_add(payload):
+async def on_raw_reaction_add(payload: discord.raw_models.RawReactionActionEvent) -> None:
     if payload.message_id == config['discord']['specializations']['message-id']:
         channel = await client.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
@@ -77,8 +78,7 @@ async def on_raw_reaction_add(payload):
 
 
 @client.command(pass_context=True)
-async def request(ctx, *args):
-
+async def request(ctx: discord.ext.commands.context.Context, *args) -> None:
     if ctx.channel.id == config['discord']['team-requests']['channel-id']:
         # don't actually do anything with the users we find here;
         # we do all of the hard work once the event starts. For now, just check to 
@@ -102,7 +102,7 @@ async def request(ctx, *args):
 
 
 @client.command(pass_context=True)
-async def ping(ctx):
+async def ping(ctx: discord.ext.commands.context.Context) -> None:
     await ctx.send('Pong! I am alive.', **msg_settings)
 
 
