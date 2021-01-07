@@ -10,6 +10,7 @@ import unicodedata
 
 intents = discord.Intents.default()
 intents.reactions = True
+intents.members = True
 client = discord.ext.commands.Bot(command_prefix='!', intents=intents)
 
 config = dict()
@@ -40,13 +41,21 @@ async def resolve_user(ctx, user: str, use_cache: bool=False) -> discord.Member:
     return member
 
 
+async def get_competitors(ctx) -> set:
+    competitors = set(ctx.guild.members)
+    for role_name in config['discord']['ignore-roles']:
+        competitors -= set(discord.utils.get(ctx.guild.roles, name=role_name).members)
+
+    return competitors
+
+
 ##########
 
 
 @client.event
 async def on_ready():
     logging.info(f'{client.user} has connected to Discord!')
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='to your requests'))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='your requests'))
 
 
 @client.event
@@ -69,6 +78,7 @@ async def on_raw_reaction_add(payload):
 
 @client.command(pass_context=True)
 async def request(ctx, *args):
+
     if ctx.channel.id == config['discord']['team-requests']['channel-id']:
         # don't actually do anything with the users we find here;
         # we do all of the hard work once the event starts. For now, just check to 
