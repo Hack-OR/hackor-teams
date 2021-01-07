@@ -78,13 +78,11 @@ async def request(ctx, *args):
 
     if _users_not_found:
         # send message saying the users weren't found. 
-        # TODO: don't forget to sanitize the usernames
         msg = '**Warning:** Unable to find users: `' + '`, `'.join(_users_not_found) + '`'
         await ctx.send(msg, **msg_settings)
     else:
-        # TODO: add a check mark reaction to the message. search for previous
-        # commands, and drop the old check mark if exists.
-        await ctx.message.add_reaction('white_check_mark')
+        # TODO: search for previous commands, and drop the old check mark if exists.
+        await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
 
 @client.command(pass_context=True)
