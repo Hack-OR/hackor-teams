@@ -5,6 +5,7 @@ import discord.ext.commands
 
 import yaml
 import logging
+import unicodedata
 
 
 intents = discord.Intents.default()
@@ -43,21 +44,20 @@ async def on_ready():
     #await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='to your requests'))
 
 
-@discord.ext.commands.Cog.listener()
-async def on_raw_reaction_add(self, payload):
-    print(message.id, config['specializations']['message-id'])
-    if payload.message_id == config['specializations']['message-id']:
-        channel = await self.bot.fetch_channel(payload.channel_id)
+@client.event
+async def on_raw_reaction_add(payload):
+    if payload.message_id == config['discord']['specializations']['message-id']:
+        channel = await client.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        user = await self.bot.fetch_user(payload.user_id)
+        user = await client.fetch_user(payload.user_id)
         emoji = payload.emoji
 
-        name = emoji.name
+        name = unicodedata.name(emoji.name).lower().replace(' ', '_').replace('symbol_letter_', '') # XXX: hack to name emoji
         try:
-            tag = config['specializations']['emojis'].get(name)
+            tag = config['discord']['specializations']['emojis'].get(name)
             if not tag:
-                message.remove_reaction(emoji, member)
-                assert tag, f'Emoji "{name}" is meaningless'
+                print(f'Removing meaningless emoji "{name}" ({emoji.name})')
+                await message.remove_reaction(emoji, payload.member)
         except Exception as e:
             logging.error('when adding reaction: ' + str(e))
 
