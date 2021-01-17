@@ -89,7 +89,7 @@ def score_team(team: list) -> float:
     score = float(abs(noobs.count(True) - noobs.count(False)) * team_size)
 
     # prefer teams with diverse specialities
-    score -= max(specialities.values()) - min(specialities.values()) / len(SPECIALITIES) * team_size * specialities_weight
+    score -= (max(specialities.values()) - min(specialities.values())) / len(SPECIALITIES) * team_size * specialities_weight
 
     # find friend balances (weight pretty hard on this one)
     for user1 in team:
