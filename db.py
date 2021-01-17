@@ -23,7 +23,7 @@ def write() -> None:
     # write to different file THEN move to avoid potential race condition
     # between opening and writing to files
     with open('db.yml.tmp', 'w') as f:
-        f.write(yaml.dump(f))
+        f.write(yaml.dump(db))
     
     os.rename('db.yml.tmp', 'db.yml')
 

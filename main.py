@@ -60,11 +60,10 @@ async def get_competitors(ctx: discord.ext.commands.context.Context) -> typing.S
 
 
 '''
-get the db users dict for the user who executed a command based on ctx
+get the db users dict for the Member object
 '''
-def _get_db_user_from_ctx(ctx: discord.ext.commands.context.Context) -> dict:
-    assert ctx
-    uid = str(ctx.author)
+def _get_db_user_from_user(user: discord.member.Member) -> dict:
+    uid = str(user)
 
     assert 'users' in db.db
     if uid not in db.db['users']:
@@ -72,6 +71,23 @@ def _get_db_user_from_ctx(ctx: discord.ext.commands.context.Context) -> dict:
         db.write()
 
     return db.db['users'][uid]
+
+
+'''
+get the db users dict for the user who executed a command based on ctx
+'''
+def _get_db_user_from_ctx(ctx: discord.ext.commands.context.Context) -> dict:
+    assert ctx
+    return _get_db_user_from_user(ctx.author)
+
+
+'''
+a hack to assign names to emojis so that we can use them in config files 
+without needing to type unicode emojis
+'''
+def _emoji_to_name(emoji: str) -> str:
+    return unicodedata.name(emoji).lower().replace(' ', '_').replace('symbol_letter_', '')
+
 
 ##########
 
@@ -90,7 +106,7 @@ async def on_raw_reaction_add(payload: discord.raw_models.RawReactionActionEvent
         user = await client.fetch_user(payload.user_id)
         emoji = payload.emoji
 
-        name = unicodedata.name(emoji.name).lower().replace(' ', '_').replace('symbol_letter_', '') # XXX: hack to name emoji
+        name = _emoji_to_name(emoji.name)
         try:
             tag = config['discord']['specializations']['emojis'].get(name)
             if not tag:
@@ -131,12 +147,50 @@ async def request(ctx: discord.ext.commands.context.Context, *args) -> None:
             await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
 
+MAKETEAMS_LOCK = False
 @client.command(pass_context=True)
 async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
-    if ctx.channel.id == config['discord']['maketeams']['channel-id']:
-        print('Parsing reactions...')
+    global MAKETEAMS_LOCK
 
-        ctx.send('Generating optimized teams, please wait (this may take a few minutes)...')
+    if MAKETEAMS_LOCK:
+        await ctx.send('Team generation already in progress, ignoring additional request...')
+        return
+
+    MAKETEAMS_LOCK = True
+
+    if ctx.channel.id == config['discord']['maketeams']['channel-id']:
+        channel = ctx.guild.get_channel(int(config['discord']['specializations']['channel-id']))
+        msg = await channel.fetch_message(int(config['discord']['specializations']['message-id']))
+
+        # reset specialities
+        for username in db.db['users']:
+            if 'specialities' in db.db['users'][username]:
+                del db.db['users'][username]['specialities']
+
+        # parse reactions => specialities
+        print('Parsing reactions...')
+        for reaction in msg.reactions:
+            emoji_name = _emoji_to_name(reaction.emoji)
+
+            # if the emoji is meaningless, skip it
+            if not (speciality := config['discord']['specializations']['emojis'].get(emoji_name)):
+                continue
+
+            async for user in reaction.users(limit=None, after=None):
+                user_dict = _get_db_user_from_user(user)
+                if 'specialities' not in user_dict:
+                    user_dict['specialities'] = list()
+
+                user_dict['specialities'].append(speciality)
+                db.write()
+
+        await ctx.send('Generating optimized teams, please wait (this may take a few minutes)...')
+        print(db.db)
+        # TODO be sure to & with the set get_competitors()
+    else:
+        await ctx.send('Wrong channel.') # we use message send permission in channels for access control
+
+    MAKETEAMS_LOCK = False
 
 
 @client.command(pass_context=True)
