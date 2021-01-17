@@ -67,21 +67,28 @@ def score_team(team: list) -> float:
     #assert len(team) == TEAM_SIZE
     team_size = len(team) # sometimes we just can't get the ideal number of people on a team
 
+    # for keeping track of specialities counts and noobs later
     specialities = dict(zip(SPECIALITIES, [0]*len(SPECIALITIES)))
     noobs = list()
 
     # find speciality balances
     specialities_weight = 1
     for user in team:
+        # kee track of the noobs
         noobs.append(user['noob'])
 
         if not user['specialities']:
             # user did not specify any specialities, so weigh down the specialities multiplier
             specialities_weight *= 1 - (1 / team_size)
+
+        # count how many users have each speciality (for scoring later)
         for speciality in user['specialities']:
             specialities[speciality] += 1
 
+    # make sure noobs are grouped together
     score = float(abs(noobs.count(True) - noobs.count(False)) * team_size)
+
+    # prefer teams with diverse specialities
     score -= max(specialities.values()) - min(specialities.values()) / len(SPECIALITIES) * team_size * specialities_weight
 
     # find friend balances (weight pretty hard on this one)
