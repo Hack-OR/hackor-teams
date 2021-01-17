@@ -74,7 +74,7 @@ def score_team(team: list) -> float:
     # find speciality balances
     specialities_weight = 1
     for user in team:
-        # kee track of the noobs
+        # keep track of the noobs
         noobs.append(user['noob'])
 
         if not user['specialities']:
@@ -94,8 +94,10 @@ def score_team(team: list) -> float:
     # find friend balances (weight pretty hard on this one)
     for user1 in team:
         for user2 in team:
+            # if both users want each other, weight this pretttttty hard!
             if user1['username'] in user2['team_requests'] and user2['username'] in user1['team_requests']:
                 score += (team_size ** 2)
+            # otherwise, weight it hard, but not as hard as it otherwise would be
             elif user1['username'] in user2['team_requests']: # only have to check this condition since it iterates over all users twice
                 score += (team_size)
 

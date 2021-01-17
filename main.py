@@ -8,6 +8,9 @@ import yaml
 import logging
 import unicodedata
 
+import db
+import team
+
 
 intents = discord.Intents.default()
 intents.reactions = True
@@ -56,6 +59,20 @@ async def get_competitors(ctx: discord.ext.commands.context.Context) -> typing.S
     return competitors
 
 
+'''
+get the db users dict for the user who executed a command based on ctx
+'''
+def _get_db_user_from_ctx(ctx: discord.ext.commands.context.Context) -> dict:
+    assert ctx
+    uid = str(ctx.author)
+
+    assert 'users' in db.db
+    if uid not in db.db['users']:
+        db.db['users'][uid] = dict()
+        db.write()
+
+    return db.db['users'][uid]
+
 ##########
 
 
@@ -83,20 +100,27 @@ async def on_raw_reaction_add(payload: discord.raw_models.RawReactionActionEvent
             logging.error('when adding reaction: ' + str(e))
 
 
+##########
+
+
 @client.command(pass_context=True)
 async def request(ctx: discord.ext.commands.context.Context, *args) -> None:
     if ctx.channel.id == config['discord']['team-requests']['channel-id']:
-        # don't actually do anything with the users we find here;
-        # we do all of the hard work once the event starts. For now, just check to 
-        # make sure all of the users exist
         _users_not_found = list()
+        _users_found = list()
         for username in set(args):
             # the work usually won't be wasted since it's stored in cache
             if not (user := await resolve_user(ctx, username)):
                 _users_not_found.append(username)
             else:
-                # check to make sure the user has the right role
+                # TODO: check to make sure both requested&requesting user have the right role
+                _users_found.append(str(user))
                 pass
+
+        if _users_found:
+            _get_db_user_from_ctx(ctx)['team_requests'] = _users_found
+            db.write()
+
 
         if _users_not_found:
             # send message saying the users weren't found. 
@@ -105,6 +129,14 @@ async def request(ctx: discord.ext.commands.context.Context, *args) -> None:
         else:
             # TODO: search for previous commands, and drop the old check mark if exists.
             await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+
+
+@client.command(pass_context=True)
+async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
+    if ctx.channel.id == config['discord']['maketeams']['channel-id']:
+        print('Parsing reactions...')
+
+        ctx.send('Generating optimized teams, please wait (this may take a few minutes)...')
 
 
 @client.command(pass_context=True)
@@ -120,5 +152,7 @@ if __name__ == '__main__':
         config = yaml.safe_load(f.read())
         token = config.get('discord', {}).get('token')
         assert token, 'Config is missing discord.token'
+
+    db.read()
 
     client.run(token)
