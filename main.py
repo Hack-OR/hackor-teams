@@ -52,10 +52,7 @@ async def resolve_user(ctx: discord.ext.commands.context.Context, user: str, use
 creates a set of discord.member.Member who are competitors
 '''
 async def get_competitors(ctx: discord.ext.commands.context.Context) -> typing.Set[discord.member.Member]:
-    competitors = set(ctx.guild.members)
-    for role_name in config['discord']['ignore-roles']:
-        competitors -= set(discord.utils.get(ctx.guild.roles, name=role_name).members)
-
+    competitors = set(discord.utils.get(ctx.guild.roles, name='Competitor').members)
     return competitors
 
 
@@ -167,6 +164,14 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
             if 'specialities' in db.db['users'][username]:
                 del db.db['users'][username]['specialities']
 
+        # TODO: get_competitors() and make sure they all exist in the db!
+        # XXX: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        for user in await get_competitors(ctx):
+            print('user', user)
+            username = str(user)
+            if username not in db.db['users']:
+                db.db['users'][username] = dict()
+
         # parse reactions => specialities
         print('Parsing reactions...')
         for reaction in msg.reactions:
@@ -185,8 +190,22 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
                 db.write()
 
         await ctx.send('Generating optimized teams, please wait (this may take a few minutes)...')
-        print(db.db)
-        # TODO be sure to & with the set get_competitors()
+
+        user_requests = list()
+        for username, details in db.db['users'].items():
+            user_request = {
+                'username': username,
+                'noob': 'noob' in details.get('specialities', list()),
+                'specialities': list(set(details.get('specialities', list())) - {'noob'}),
+                'team_requests': details.get('team_requests', list())
+            }
+            user_requests.append(user_request)
+
+        print('user_requests:', user_requests)
+        teams = team.get_optimized_teams(user_requests)
+        print('generated teams:', teams)
+
+
     else:
         await ctx.send('Wrong channel.') # we use message send permission in channels for access control
 
