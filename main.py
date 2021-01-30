@@ -5,11 +5,13 @@ import discord.ext.commands
 
 import typing
 import yaml
+import json
 import logging
 import unicodedata
+import time
 
 import db
-import team
+import teamutil
 
 
 intents = discord.Intents.default()
@@ -163,10 +165,8 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
             if 'specialities' in db.db['users'][username]:
                 del db.db['users'][username]['specialities']
 
-        # TODO: get_competitors() and make sure they all exist in the db!
-        # XXX: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        #  get_competitors() and make sure they all exist in the db
         for user in await get_competitors(ctx):
-            print('user', user)
             username = str(user)
             if username not in db.db['users']:
                 db.db['users'][username] = dict()
@@ -201,9 +201,42 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
             user_requests.append(user_request)
 
         print('user_requests:', user_requests)
-        teams = team.get_optimized_teams(user_requests)
-        import json
+        start_time = time.time()
+        teams = teamutil.get_optimized_teams(user_requests)
         print('generated teams:', json.dumps(teams, indent=2))
+
+        await ctx.send(f'Formed {len(teams)} teams of {teamutil.TEAM_SIZE} people in %.2f seconds.' % (time.time() - start_time))
+
+        team_no = 1
+        category = await ctx.guild.create_category('Teams')
+        for team in teams:
+            team_name = 'team-%d' % team_no
+            permissions = {
+                ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                ctx.guild.me: discord.PermissionOverwrite(read_messages=True),
+                discord.utils.get(ctx.guild.roles, name='Organizers'): discord.PermissionOverwrite(read_messages=True)
+                # TODO: add Organizers here
+            }
+
+            for member in team:
+                permissions[await resolve_user(ctx, member['username'], use_cache=True)] = discord.PermissionOverwrite(read_messages=True)
+
+            channel = await ctx.guild.create_text_channel(team_name, category=category, topic=f'Discuss your HackOR project with your team ({team_name}) here.', overwrites=permissions)
+
+            teammates_msg = ''
+            for member in team:
+                teammates_msg += f'  *  @{member["username"]}'
+                if member.get('specialities'):
+                    teammates_msg += ' (' + ', '.join(member['specialities']) + ')'
+                teammates_msg += '\n'
+
+            await channel.send('''Hello! I created this channel for you and your new team. You may discuss your project or other group details here.
+
+Let me introduce you to your teammates:
+''' + teammates_msg + '''
+Start off by figuring out what you are all interested in, and figure out what project you want to make. Note that you don't have to use this channel to communicate if you prefer to communicate via other means.''')
+
+            team_no += 1
 
 
     else:
