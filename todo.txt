@@ -1,0 +1,6 @@
+- make sure teamutil.TEAM_SIZE is 2
+- change main.TESTING_MODE to False
+- double check role names
+- read over config
+    - double check channel ids in config
+- !maketeams in #info
