@@ -130,10 +130,9 @@ async def request(ctx: discord.ext.commands.context.Context, *args) -> None:
                 _users_found.append(str(user))
                 pass
 
-        if _users_found:
-            _get_db_user_from_ctx(ctx)['team_requests'] = _users_found
-            db.write()
-
+        # don't do `if _users_found` because we want "!maketeams" (without args) to reset this
+        _get_db_user_from_ctx(ctx)['team_requests'] = _users_found
+        db.write()
 
         if _users_not_found:
             # send message saying the users weren't found. 
@@ -203,7 +202,8 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
 
         print('user_requests:', user_requests)
         teams = team.get_optimized_teams(user_requests)
-        print('generated teams:', teams)
+        import json
+        print('generated teams:', json.dumps(teams, indent=2))
 
 
     else:
