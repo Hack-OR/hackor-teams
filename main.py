@@ -22,6 +22,8 @@ client = discord.ext.commands.Bot(command_prefix='!', intents=intents)
 config = dict()
 msg_settings = {'allowed_mentions': discord.AllowedMentions(everyone=False, roles=set())}
 
+TESTING_MODE = True
+
 
 ##########
 
@@ -151,7 +153,7 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
     global MAKETEAMS_LOCK
 
     if MAKETEAMS_LOCK:
-        await ctx.send('Team generation already in progress, ignoring additional request...')
+        await ctx.send('Team generation already in progress, ignoring additional request...', **msg_settings)
         return
 
     MAKETEAMS_LOCK = True
@@ -188,7 +190,7 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
                 user_dict['specialities'].append(speciality)
                 db.write()
 
-        await ctx.send('Generating optimized teams, please wait (this may take a few minutes)...')
+        await ctx.send('Generating optimized teams, please wait (this may take a few minutes)...', **msg_settings)
 
         user_requests = list()
         for username, details in db.db['users'].items():
@@ -205,7 +207,7 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
         teams = teamutil.get_optimized_teams(user_requests)
         print('generated teams:', json.dumps(teams, indent=2))
 
-        await ctx.send(f'Formed {len(teams)} teams of {teamutil.TEAM_SIZE} people in %.2f seconds.' % (time.time() - start_time))
+        await ctx.send(f'Formed {len(teams)} teams of {teamutil.TEAM_SIZE} people in %.2f seconds.' % (time.time() - start_time), **msg_settings)
 
         team_no = 1
         category = await ctx.guild.create_category('Teams')
@@ -225,22 +227,29 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
 
             teammates_msg = ''
             for member in team:
-                teammates_msg += f'  *  @{member["username"]}'
+                member_obj = await resolve_user(ctx, member['username'], use_cache=False)
+                if not member_obj:
+                    # don't exit, just warn
+                    print('Unable to find member object for member', member, '!')
+                    continue
+                
+                teammates_msg += f'  *  ' + (member_obj.mention if not TESTING_MODE else member['username'])
                 if member.get('specialities'):
                     teammates_msg += ' (' + ', '.join(member['specialities']) + ')'
                 teammates_msg += '\n'
 
-            await channel.send('''Hello! I created this channel for you and your new team. You may discuss your project or other group details here.
+            message = await channel.send('''Hello! I created this channel for you and your new team. You may discuss your project or other group details here.
 
 Let me introduce you to your teammates:
 ''' + teammates_msg + '''
-Start off by figuring out what you are all interested in, and figure out what project you want to make. Note that you don't have to use this channel to communicate if you prefer to communicate via other means.''')
+Start off by figuring out what you are all interested in, and figure out what project you want to make. Note that you don't have to use this channel to communicate if you prefer to communicate via other means.''', )
+            await message.pin()
 
             team_no += 1
 
 
     else:
-        await ctx.send('Wrong channel.') # we use message send permission in channels for access control
+        await ctx.send('Wrong channel.', **msg_settings) # we use message send permission in channels for access control
 
     MAKETEAMS_LOCK = False
 
