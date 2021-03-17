@@ -39,7 +39,7 @@ client = discord.ext.commands.Bot(command_prefix='!', intents=intents)
 config = dict()
 msg_settings = {'allowed_mentions': discord.AllowedMentions(everyone=False, roles=set())}
 
-TESTING_MODE = True # TODO: set to false
+TESTING_MODE = False
 
 
 ##########
