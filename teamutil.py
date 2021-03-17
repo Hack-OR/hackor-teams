@@ -109,6 +109,9 @@ def get_optimized_teams(user_requests: dict) -> list:
     __teams_list = [list() for x in range(num_teams)] # need new list() instances, can't use [[]]*num_teams!
     __user_requests = copy.deepcopy(user_requests) # we are going to make mods, so copy the dict
 
+    if len(user_requests) <= TEAM_SIZE:
+        return [user_requests]
+
     # make teams
     i = 0
     while __user_requests:

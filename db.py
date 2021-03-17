@@ -11,15 +11,19 @@ db = {
 
 
 def read() -> None:
+    global db
     try:
         with open('db.yml', 'r') as f:
             db = yaml.safe_load(f)
     except FileNotFoundError:
         # the file will be created next write
         pass
+    print('[ ] read db size: %d' % len(str(db)))
 
 
 def write() -> None:
+    global db
+    print('[ ] write db size: %d' % len(str(db)))
     # write to different file THEN move to avoid potential race condition
     # between opening and writing to files
     with open('db.yml.tmp', 'w') as f:
