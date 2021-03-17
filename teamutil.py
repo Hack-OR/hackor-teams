@@ -6,7 +6,7 @@ import math
 
 
 SPECIALITIES = [ 'software', 'ui/ux', 'backend' ]
-TEAM_SIZE = 2
+TEAM_SIZE = 4
 
 repr_team = lambda team: (sorted([x['username'] for x in team]))
 
