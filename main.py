@@ -405,11 +405,11 @@ Start off by figuring out what you are all interested in, and figure out what pr
 async def ping(ctx: discord.ext.commands.context.Context) -> None:
     await ctx.send('Pong! I am alive.', **msg_settings)
 
-    channel = ctx.guild.get_channel(int(config['discord']['specializations']['channel-id']))
-    msg = await channel.fetch_message(int(config['discord']['specializations']['message-id']))
-    
-    for name in config['discord']['specializations']['emojis']:
-        await msg.add_reaction(name)
+    #channel = ctx.guild.get_channel(int(config['discord']['specializations']['channel-id']))
+    #msg = await channel.fetch_message(int(config['discord']['specializations']['message-id']))
+    #
+    #for name in config['discord']['specializations']['emojis']:
+    #    await msg.add_reaction(name) # BUG: have to convert name => emoji name => emoji unicode somehow
 
 
 ##########
