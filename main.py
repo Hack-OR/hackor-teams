@@ -73,7 +73,7 @@ async def resolve_user(ctx: discord.ext.commands.context.Context, user: str, use
 creates a set of discord.member.Member who are competitors
 '''
 async def get_competitors(ctx: discord.ext.commands.context.Context) -> typing.Set[discord.member.Member]:
-    competitors = set(discord.utils.get(ctx.guild.roles, name='Competitor').members)
+    competitors = set(discord.utils.get(ctx.guild.roles, id=config['discord']['competitor-id']).members)
     return competitors
 
 
