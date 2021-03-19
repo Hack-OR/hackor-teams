@@ -389,7 +389,7 @@ async def maketeams(ctx: discord.ext.commands.context.Context, *args) -> None:
 
 Let me introduce you to your teammates:
 ''' + teammates_msg + '''
-Start off by figuring out what you are all interested in, and figure out what project you want to make. Note that you don't have to use this channel to communicate if you prefer to communicate via other means. Also, feel free to pick a more creative team name :D''', **msg_settings)
+Start off by figuring out what you are all interested in, and figure out what project you want to make. Note that you don't have to use this channel to communicate if you prefer to communicate via other means.''', **msg_settings)
             await message.pin()
 
             team_no += 1
